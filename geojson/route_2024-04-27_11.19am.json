@@ -1,0 +1,31 @@
+{
+    "type": "FeatureCollection",
+    "features": [
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Route 2024-04-27 11:19am",
+                "time": "2024-04-27T15:19:26Z",
+                "coordTimes": [
+                    "2024-04-27T15:19:26Z",
+                    "2024-04-27T15:19:27Z"
+                ]
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -71.133026,
+                        42.428962,
+                        13.548754
+                    ],
+                    [
+                        -71.133005,
+                        42.428962,
+                        13.392506
+                    ]
+                ]
+            }
+        }
+    ]
+}
