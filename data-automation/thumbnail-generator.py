@@ -89,7 +89,7 @@ with open(INDEX_FILE, "w") as out:
     for html_file in html_files:
         name = os.path.splitext(html_file)[0]
         label = name.replace("route_", "").replace("_", " ")
-        thumb_rel = f"{MAPS_DIR}/thumbnails/{name}.png"
+        thumb_rel = f"{MAPS_DIR}/map-thumbnails/{name}.png"
         map_rel = f"{MAPS_DIR}/{html_file}"
 
         out.write(f"""
