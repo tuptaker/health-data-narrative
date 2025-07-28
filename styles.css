@@ -1,0 +1,44 @@
+/* styles.css */
+
+body {
+    margin: 0;
+    font-family: sans-serif;
+    background: #f0f4f1;
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    text-align: center;
+    padding: 0 20px;
+}
+
+h1 {
+    font-size: 2.8em;
+    margin-bottom: 0.5em;
+    color: #2d5933;
+}
+
+h2 {
+    font-weight: normal;
+    font-size: 1.3em;
+    max-width: 600px;
+    margin-bottom: 2em;
+    line-height: 1.5;
+    color: #444;
+}
+
+a.button {
+    background: #477740;
+    color: white;
+    padding: 14px 28px;
+    font-size: 1.1em;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: background 0.3s ease;
+}
+
+a.button:hover {
+    background: #365d2f;
+}
