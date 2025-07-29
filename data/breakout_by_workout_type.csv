@@ -1,9 +1,8 @@
 workoutActivityType,count
-HKWorkoutActivityTypeWalking,2824
-HKWorkoutActivityTypeElliptical,238
-HKWorkoutActivityTypeRunning,189
-HKWorkoutActivityTypeFunctionalStrengthTraining,185
-HKWorkoutActivityTypeSwimming,22
-HKWorkoutActivityTypeOther,17
-HKWorkoutActivityTypeCycling,4
-HKWorkoutActivityTypeUnderwaterDiving,1
+Walking,2824
+Elliptical,238
+Running,189
+FunctionalStrengthTraining,185
+Swimming,22
+Other,17
+
