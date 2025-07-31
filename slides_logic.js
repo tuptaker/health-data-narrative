@@ -1,4 +1,3 @@
-// interactive_slide_part_0.js
 function initSlide0() {
     d3.select("#donutChart").selectAll("*").remove();
     d3.select("#stackedBarChart").selectAll("*").remove();
@@ -463,29 +462,6 @@ function initSlide1Old() {
                 tooltip.style("opacity", 0);
             });
 
-        // .on("mouseover", function (event, d) {
-            //     tooltip.transition().duration(100).style("opacity", 1);
-            //     tooltip.html(`Heart Rate: ${d.bpm} bpm<br>${d.creationDate.toLocaleString()}`)
-            //         .style("left", `${event.pageX + 10}px`)
-            //         .style("top", `${event.pageY - 28}px`);
-            // })
-            // .on("mousemove", function (event) {
-            //     tooltip
-            //         .style("left", `${event.pageX + 10}px`)
-            //         .style("top", `${event.pageY - 28}px`);
-            // })
-            // .on("mouseout", function () {
-            //     tooltip.transition().duration(200).style("opacity", 0);
-            // });
-            // .on("mouseover", function (event, d) {
-            //     tooltip
-            //         .style("opacity", 1)
-            //         .html(`Heart Rate: ${d.bpm} bpm<br>${d.creationDate.toLocaleString()}`)
-            //         .style("left", (event.pageX + 10) + "px")
-            //         .style("top", (event.pageY - 28) + "px");
-            // })
-            // .on("mouseout", () => tooltip.style("opacity", 0));
-
         // Resting heart rate line
         const restingLine = d3.line()
             .curve(d3.curveMonotoneX)
@@ -499,41 +475,6 @@ function initSlide1Old() {
             .attr("stroke", "#ff7f0e")
             .attr("stroke-width", 1.5)
             .attr("d", restingLine);
-
-        // // Tooltip hover for line (nearest dot)
-        // const dotOverlay = g.append("rect")
-        //     .attr("width", chartWidth)
-        //     .attr("height", chartHeight)
-        //     .attr("fill", "transparent")
-        //     .on("mousemove", function (event) {
-        //         const [mx] = d3.pointer(event);
-        //         const hoveredDate = xScale.invert(mx);
-        //         const nearest = resting.reduce((a, b) => (
-        //             Math.abs(a.creationDate - hoveredDate) < Math.abs(b.creationDate - hoveredDate) ? a : b
-        //         ));
-        //         tooltip
-        //             .style("opacity", 1)
-        //             .html(`Resting HR: ${nearest.bpm} bpm<br>${nearest.creationDate.toLocaleString()}`)
-        //             .style("left", (event.pageX + 10) + "px")
-        //             .style("top", (event.pageY - 28) + "px");
-        //     })
-        //     .on("mouseout", () => tooltip.style("opacity", 0));
-
-        // Brush to zoom
-        // const brushOld = d3.brushX()
-        //     .extent([[0, 0], [chartWidth, chartHeight]])
-        //     .on("end", (event) => {
-        //         if (!event.selection) return;
-        //         const [x0, x1] = event.selection.map(xScale.invert);
-        //         xScale.domain([x0, x1]);
-        //
-        //         // Update elements
-        //         xAxis.transition().duration(750).call(d3.axisBottom(xScale).ticks(6).tickFormat(d3.timeFormat("%b %Y")));
-        //         dots.transition().duration(750)
-        //             .attr("cx", d => xScale(d.creationDate));
-        //         linePath.transition().duration(750)
-        //             .attr("d", restingLine);
-        //     });
 
         const brush = d3.brushX()
             .extent([[0, 0], [chartWidth, chartHeight]])
