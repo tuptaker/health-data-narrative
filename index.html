@@ -5,7 +5,7 @@
   <title>My Health Data 2017–2025</title>
   <link rel="stylesheet" href="styles.css">
   <script src="https://d3js.org/d3.v7.min.js"></script>
-  <script src="interactive_slide_part_1.js"></script>
+  <script src="slides_logic.js"></script>
 </head>
 <body>
 <h1>My Health Data 2017–2025</h1>
@@ -21,14 +21,18 @@
   <button id="nextSlide">&raquo;</button>
 </div>
 
+<div id="loading" class="loading-spinner" style="display:none;">
+  Loading heart rate data...
+</div>
+
 <div id="slideContainer"></div>
 
-<div class="tooltip" style="opacity: 0;"></div>
+<div class="tooltip" id="tooltip" style="opacity: 0;"></div>
 
 <script>
   const slides = [
+    'interactive_slide_part_0.html',
     'interactive_slide_part_1.html',
-    null,
     null,
     null,
     null
@@ -47,13 +51,26 @@
       fetch(slides[index])
               .then(res => res.text())
               .then(html => {
-                slideContainer.innerHTML = html;
+                // slideContainer.innerHTML = "";  // <-- clear existing content first
+                // slideContainer.innerHTML = html;
+                // window.scrollTo(0, 0);
+
+                const temp = document.createElement("div");
+                temp.innerHTML = html;
+                slideContainer.replaceChildren(...temp.children);
                 window.scrollTo(0, 0);
+
+                console.log(`Slide ${index} is ${currentSlide}`);
                 setTimeout(() => {
-                  if (typeof window.initCharts === "function") {
-                    window.initCharts();
+                  if (index === 0 && typeof window.initSlide0 === "function") {
+                    console.log(`going to slide ${index}`);
+                    window.initSlide0();
+                  } else if (index === 1 && typeof window.initSlide1 === "function") {
+                    console.log(`going to slide ${index}`);
+                    window.initSlide1();
                   }
                 }, 0);
+
               });
     } else {
       slideContainer.innerHTML = `<div class="coming-soon">Slide ${index + 1} coming soon...</div>`;
