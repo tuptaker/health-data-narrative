@@ -1,24 +1,23 @@
-// interactive_slide_part_0.js
+const colorMap = {
+    Walking: "#4e79a7",
+    Elliptical: "#f28e2b",
+    Running: "#e15759",
+    FunctionalStrengthTraining: "#76b7b2",
+    Swimming: "#59a14f",
+    Other: "#edc948",
+    Cycling: "#b07aa1",
+    UnderwaterDiving: "#ff9da7",
+    HeartRate: "#2bbadc",
+    RestingHeartRate: "#9d68ea"
+};
+
 function initSlide0() {
     d3.select("#donutChart").selectAll("*").remove();
     d3.select("#stackedBarChart").selectAll("*").remove();
     d3.select("#legend").selectAll("*").remove();
 
-    const colorMap = {
-        Walking: "#4e79a7",
-        Elliptical: "#f28e2b",
-        Running: "#e15759",
-        FunctionalStrengthTraining: "#76b7b2",
-        Swimming: "#59a14f",
-        Other: "#edc948",
-        Cycling: "#b07aa1",
-        UnderwaterDiving: "#ff9da7"
-    };
-
     const disabledTypes = new Set();
-
     let pieDataRaw, stackedDataRaw, keys;
-
     const tooltip = d3.select(".tooltip");
 
     const updateCharts = () => {
@@ -27,7 +26,6 @@ function initSlide0() {
 
         // Filtered pie data
         const filteredPie = pieDataRaw.filter(d => !disabledTypes.has(d.label));
-
         const pie = d3.pie().value(d => d.value)(filteredPie);
         const arc = d3.arc().innerRadius(100).outerRadius(180);
         const svgPie = d3.select("#donutChart")
@@ -160,7 +158,6 @@ function initSlide1() {
     const width = 1000;
     const height = 400;
     const margin = { top: 20, right: 30, bottom: 40, left: 60 };
-
     const chartWidth = width - margin.left - margin.right;
     const chartHeight = height - margin.top - margin.bottom;
 
@@ -211,13 +208,7 @@ function initSlide1() {
             .attr("y", -45)
             .attr("fill", "black")
             .attr("text-anchor", "middle")
-            .text("bpm");
-
-        const clip = svg.append("defs").append("clipPath")
-            .attr("id", "clip")
-            .append("rect")
-            .attr("width", chartWidth)
-            .attr("height", chartHeight);
+            .text("beats per minute");
 
         const plotArea = g.append("g")
             .attr("clip-path", "url(#clip)");
@@ -229,7 +220,7 @@ function initSlide1() {
             .attr("cx", d => xScale(d.creationDate))
             .attr("cy", d => yScale(d.bpm))
             .attr("r", 2)
-            .attr("fill", "#1f77b4")
+            .attr("fill", colorMap.HeartRate)
             .on("mouseover", function (event, d) {
                 const bounds = this.getBoundingClientRect();
                 tooltip
@@ -249,7 +240,7 @@ function initSlide1() {
         const linePath = plotArea.append("path")
             .datum(resting)
             .attr("fill", "none")
-            .attr("stroke", "#ff7f0e")
+            .attr("stroke", colorMap.RestingHeartRate)
             .attr("stroke-width", 1.5)
             .attr("d", restingLine);
 
@@ -342,8 +333,8 @@ function initSlide1() {
         legendContainer.html(""); // clear any existing content
 
         const legendItems = [
-            { label: "Heart Rate", color: "#1f77b4" },
-            { label: "Resting Heart Rate", color: "#ff7f0e" }
+            { label: "Heart Rate", color: colorMap.HeartRate },
+            { label: "Resting Heart Rate", color: colorMap.RestingHeartRate },
         ];
 
         legendItems.forEach(item => {
@@ -369,224 +360,145 @@ function initSlide1() {
     });
 }
 
-
-
-function initSlide1Old() {
-    const svg = d3.select("#heartRateLineChart");
+function initSlide2() {
+    console.log('loading slide 2');
+    const svg = d3.select("#walkRunDetails");
     svg.selectAll("*").remove();
 
     const width = 1000;
     const height = 400;
     const margin = { top: 20, right: 30, bottom: 40, left: 60 };
-
     const chartWidth = width - margin.left - margin.right;
     const chartHeight = height - margin.top - margin.bottom;
 
     svg.attr("width", width).attr("height", height);
-
     const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
     const tooltip = d3.select(".tooltip");
 
     document.getElementById("loading").style.display = "block";
 
-    const cutoffDate = new Date("2021-09-07");
-
+    const parseDate = d3.timeParse("%Y-%m-%d");
     Promise.all([
-        d3.csv("./data/heart_rate.csv", d => ({
-            creationDate: new Date(d.creationDate),
-            bpm: +d.value
+        d3.csv("./data/walking_details_by_day.csv", d => ({
+            date: parseDate(d.date.trim()),
+            distance: +d.distance || 0
         })),
-        d3.csv("./data/resting_heart_rate.csv", d => ({
-            creationDate: new Date(d.creationDate),
-            bpm: +d.value
+        d3.csv('./data/running_details_by_day.csv', d => ({
+            date: parseDate(d.date.trim()),
+            distance: +d.distance || 0
         }))
-    ]).then(([heartData, restingData]) => {
-        const heart = heartData.filter(d => d.creationDate >= cutoffDate).filter((_, i) => i % 10 === 0);
-        const resting = restingData.filter(d => d.creationDate >= cutoffDate).filter((_, i) => i % 2 === 0);
+    ]).then(([walkingData, runningData]) => {
+        const allDates = walkingData.map(d => d.date).concat(runningData.map(d => d.date));
+        const allDistances = walkingData.map(d => d.distance).concat(runningData.map(d => d.distance));
+        console.log("Sample parsed dates:", walkingData.slice(0, 5).map(d => d.date));
 
-        const all = heart.concat(resting);
-        const xExtent = d3.extent(all, d => d.creationDate);
-        const yExtent = d3.extent(all, d => d.bpm);
+        const xScale = d3.scaleTime()
+            .domain(d3.extent(allDates))
+            .range([0, chartWidth]);
 
-        let xScale = d3.scaleTime().domain(xExtent).range([0, chartWidth]);
-        const yScale = d3.scaleLinear().domain([Math.floor(yExtent[0] - 5), Math.ceil(yExtent[1] + 5)]).range([chartHeight, 0]);
+        const yScale = d3.scaleLinear()
+            .domain([0, d3.max(allDistances)])
+            .range([chartHeight, 0]);
 
-        const xAxis = g.append("g")
-            .attr("transform", `translate(0, ${chartHeight})`)
-            .call(d3.axisBottom(xScale).ticks(6).tickFormat(d3.timeFormat("%b %Y")));
+        const xAxis = d3.axisBottom(xScale).ticks(6).tickFormat(d => {
+            const formatMonthDay = d3.timeFormat("%b %d");
+            const formatYear = d3.timeFormat("%Y");
+            return d.getMonth() === 0 && d.getDate() === 1
+                ? formatYear(d) : formatMonthDay(d);
+        })
+        ;
+        const yAxis = d3.axisLeft(yScale).ticks(6);
 
-        const yAxis = g.append("g")
-            .call(d3.axisLeft(yScale).ticks(6));
+        g.append("g")
+            .attr("transform", `translate(0,${chartHeight})`)
+            .call(xAxis);
 
+        g.append("g")
+            .call(yAxis);
+
+        // Axis labels
         g.append("text")
-            .attr("x", chartWidth)
+            .attr("x", chartWidth / 2)
             .attr("y", chartHeight + 35)
             .attr("fill", "black")
-            .attr("text-anchor", "end")
+            .attr("text-anchor", "middle")
             .text("time");
 
         g.append("text")
             .attr("transform", "rotate(-90)")
-            .attr("x", -margin.top)
+            .attr("x", -chartHeight / 2)
             .attr("y", -45)
             .attr("fill", "black")
-            .attr("text-anchor", "end")
-            .text("bpm");
+            .attr("text-anchor", "middle")
+            .text("distance (mi)");
 
-        const clip = svg.append("defs").append("clipPath")
-            .attr("id", "clip")
-            .append("rect")
-            .attr("width", chartWidth)
-            .attr("height", chartHeight);
+        const area = d3.area()
+            .x(d => xScale(d.date))
+            .y0(chartHeight)
+            .y1(d => yScale(d.distance))
+            .curve(d3.curveMonotoneX);
 
-        const plotArea = g.append("g")
-            .attr("clip-path", "url(#clip)");
+        g.append("path")
+            .datum(runningData)
+            .attr("fill", colorMap.Running)
+            .attr("d", area)
+            .attr("opacity", 0.6);
 
-        // Scatterplot for heart rate
-        const dots = plotArea.selectAll("circle")
-            .data(heart)
+        g.append("path")
+            .datum(walkingData)
+            .attr("fill", "##1f77b4")
+            .attr("d", area)
+            .attr("opacity", 0.6);
+
+        // Tooltip points
+        const allData = walkingData.map(d => ({ ...d, type: "Walking", color: colorMap.Walking }))
+            .concat(runningData.map(d => ({ ...d, type: "Running", color: colorMap.Running })));
+
+        g.selectAll(".dot")
+            .data(allData)
             .enter()
             .append("circle")
-            .attr("cx", d => xScale(d.creationDate))
-            .attr("cy", d => yScale(d.bpm))
-            .attr("r", 1.8)
-            .attr("fill", "#1f77b4")
+            .attr("cx", d => xScale(d.date))
+            .attr("cy", d => yScale(d.distance))
+            .attr("r", 3)
+            .attr("fill", d => d.color)
             .on("mouseover", function (event, d) {
-                const [x, y] = d3.pointer(event, document.body); // or svg.node()
+                const bounds = this.getBoundingClientRect();
                 tooltip
                     .style("opacity", 1)
-                    .style("left", `${x + 20}px`)
-                    .style("top", `${y}px`)
-                    .html(`Heart Rate: ${d.bpm} bpm<br>${d.creationDate.toLocaleString()}`);
+                    .style("left", `${bounds.left + bounds.width / 2}px`)
+                    .style("top", `${bounds.top - 30}px`)
+                    .html(`${d.type} Distance: ${d.distance.toFixed(2)} mi<br>${d3.timeFormat("%B %d, %Y")(d.date)}`);
             })
-            .on("mouseout", () => {
-                tooltip.style("opacity", 0);
-            });
+            .on("mouseout", () => tooltip.style("opacity", 0));
 
-        // .on("mouseover", function (event, d) {
-            //     tooltip.transition().duration(100).style("opacity", 1);
-            //     tooltip.html(`Heart Rate: ${d.bpm} bpm<br>${d.creationDate.toLocaleString()}`)
-            //         .style("left", `${event.pageX + 10}px`)
-            //         .style("top", `${event.pageY - 28}px`);
-            // })
-            // .on("mousemove", function (event) {
-            //     tooltip
-            //         .style("left", `${event.pageX + 10}px`)
-            //         .style("top", `${event.pageY - 28}px`);
-            // })
-            // .on("mouseout", function () {
-            //     tooltip.transition().duration(200).style("opacity", 0);
-            // });
-            // .on("mouseover", function (event, d) {
-            //     tooltip
-            //         .style("opacity", 1)
-            //         .html(`Heart Rate: ${d.bpm} bpm<br>${d.creationDate.toLocaleString()}`)
-            //         .style("left", (event.pageX + 10) + "px")
-            //         .style("top", (event.pageY - 28) + "px");
-            // })
-            // .on("mouseout", () => tooltip.style("opacity", 0));
+        // Legend (non-interactive)
+        const legendContainer = d3.select("#legend");
+        legendContainer.html(""); // clear any existing content
 
-        // Resting heart rate line
-        const restingLine = d3.line()
-            .curve(d3.curveMonotoneX)
-            .defined(d => !isNaN(d.bpm))
-            .x(d => xScale(d.creationDate))
-            .y(d => yScale(d.bpm));
+        const legendItems = [
+            { label: "Running", color: colorMap.Running },
+            { label: "Walking", color: colorMap.Walking },
+        ];
 
-        const linePath = plotArea.append("path")
-            .datum(resting)
-            .attr("fill", "none")
-            .attr("stroke", "#ff7f0e")
-            .attr("stroke-width", 1.5)
-            .attr("d", restingLine);
+        legendItems.forEach(item => {
+            const legendItem = legendContainer.append("div")
+                .attr("class", "legend-item");
 
-        // // Tooltip hover for line (nearest dot)
-        // const dotOverlay = g.append("rect")
-        //     .attr("width", chartWidth)
-        //     .attr("height", chartHeight)
-        //     .attr("fill", "transparent")
-        //     .on("mousemove", function (event) {
-        //         const [mx] = d3.pointer(event);
-        //         const hoveredDate = xScale.invert(mx);
-        //         const nearest = resting.reduce((a, b) => (
-        //             Math.abs(a.creationDate - hoveredDate) < Math.abs(b.creationDate - hoveredDate) ? a : b
-        //         ));
-        //         tooltip
-        //             .style("opacity", 1)
-        //             .html(`Resting HR: ${nearest.bpm} bpm<br>${nearest.creationDate.toLocaleString()}`)
-        //             .style("left", (event.pageX + 10) + "px")
-        //             .style("top", (event.pageY - 28) + "px");
-        //     })
-        //     .on("mouseout", () => tooltip.style("opacity", 0));
+            legendItem.append("div")
+                .attr("class", "legend-color")
+                .style("background-color", item.color);
 
-        // Brush to zoom
-        // const brushOld = d3.brushX()
-        //     .extent([[0, 0], [chartWidth, chartHeight]])
-        //     .on("end", (event) => {
-        //         if (!event.selection) return;
-        //         const [x0, x1] = event.selection.map(xScale.invert);
-        //         xScale.domain([x0, x1]);
-        //
-        //         // Update elements
-        //         xAxis.transition().duration(750).call(d3.axisBottom(xScale).ticks(6).tickFormat(d3.timeFormat("%b %Y")));
-        //         dots.transition().duration(750)
-        //             .attr("cx", d => xScale(d.creationDate));
-        //         linePath.transition().duration(750)
-        //             .attr("d", restingLine);
-        //     });
-
-        const brush = d3.brushX()
-            .extent([[0, 0], [chartWidth, chartHeight]])
-            .on("end", (event) => {
-                if (!event.selection) return;
-                const [x0, x1] = event.selection.map(xScale.invert);
-                xScale.domain([x0, x1]);
-
-                // Update chart elements
-                xAxis.transition().duration(750).call(d3.axisBottom(xScale));
-                dots.transition().duration(750).attr("cx", d => xScale(d.creationDate));
-                linePath.transition().duration(750).attr("d", restingLine);
-
-                // 👇 Disable pointer-events on brush overlay after zoom
-                g.select(".brush")
-                    .selectAll(".overlay")
-                    .attr("pointer-events", "none");
-            });
-
-
-        g.append("g")
-            .attr("class", "brush")
-            // .attr("pointer-events", "none")  // on the brush background
-            .call(brush);
-        //
-        // g.select(".brush")
-        //     .selectAll(".overlay")
-        //     .attr("pointer-events", "none");
-
-        // Reset zoom on double click
-        svg.on("dblclick", () => {
-            xScale.domain(xExtent);
-            xAxis.transition().duration(750).call(d3.axisBottom(xScale).ticks(6).tickFormat(d3.timeFormat("%b %Y")));
-            dots.transition().duration(750).attr("cx", d => xScale(d.creationDate));
-            linePath.transition().duration(750).attr("d", restingLine);
-
-            // Re-enable brush interaction
-            g.select(".brush")
-                .call(brush.move, null) // clears selection
-                .selectAll(".overlay")
-                .attr("pointer-events", "all");
+            legendItem.append("div").text(item.label);
         });
 
-        // Legend
-        const legend = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
-        legend.append("rect").attr("x", 0).attr("y", 0).attr("width", 12).attr("height", 12).attr("fill", "#1f77b4");
-        legend.append("text").attr("x", 20).attr("y", 10).text("Heart Rate");
-        legend.append("rect").attr("x", 120).attr("y", 0).attr("width", 12).attr("height", 12).attr("fill", "#ff7f0e");
-        legend.append("text").attr("x", 140).attr("y", 10).text("Resting Heart Rate");
+        legendContainer
+            .classed("legend-noninteractive", true)
+            .style("pointer-events", "none");
 
     }).catch(err => {
         console.error("Error loading data:", err);
-        d3.select("#slideContainer").append("div").text("Failed to load heart rate data.");
+        d3.select("#slideContainer").append("div").text("Failed to load running and walking data.");
     }).finally(() => {
         document.getElementById("loading").style.display = "none";
     });
