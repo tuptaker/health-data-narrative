@@ -273,148 +273,229 @@ function initSlide0() {
     });
 }
 
+function initSlide1() {
+    const svg = d3.select("#heartRateLineChart");
+    svg.selectAll("*").remove();
 
-function initSlide0Old() {
-    d3.select("#donutChart").selectAll("*").remove();
-    d3.select("#stackedBarChart").selectAll("*").remove();
-    d3.select("#legend").selectAll("*").remove();
+    const width = 1000;
+    const height = 400;
+    const margin = { top: 20, right: 30, bottom: 40, left: 60 };
+    const chartWidth = width - margin.left - margin.right;
+    const chartHeight = height - margin.top - margin.bottom;
 
-    const disabledTypes = new Set();
-    let pieDataRaw, stackedDataRaw, keys;
+    svg.attr("width", width).attr("height", height);
+
+    const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
     const tooltip = d3.select(".tooltip");
 
-    const updateCharts = () => {
-        d3.select("#donutChart").selectAll("*").remove();
-        d3.select("#stackedBarChart").selectAll("*").remove();
+    const cutoffDate = new Date("2021-09-07");
+    let annotationsVisible = true;
+    document.getElementById("loading").style.display = "block";
 
-        // Filtered pie data
-        const filteredPie = pieDataRaw.filter(d => !disabledTypes.has(d.label));
-        const pie = d3.pie().value(d => d.value)(filteredPie);
-        const arc = d3.arc().innerRadius(100).outerRadius(180);
-        const svgPie = d3.select("#donutChart")
-            .append("g")
-            .attr("transform", "translate(200,200)");
-
-        svgPie.selectAll("path")
-            .data(pie)
-            .enter()
-            .append("path")
-            .attr("d", arc)
-            .attr("fill", d => colorMap[d.data.label])
-            .on("mousemove", (event, d) => {
-                const total = d3.sum(filteredPie, d => d.value);
-                const percent = ((d.data.value / total) * 100).toFixed(1);
-                tooltip
-                    .style("opacity", 1)
-                    .style("left", (event.pageX + 10) + "px")
-                    .style("top", (event.pageY - 28) + "px")
-                    .html(`<strong>${d.data.label}</strong><br/>${percent}%`);
-            })
-            .on("mouseout", () => tooltip.style("opacity", 0));
-
-        // Filtered stacked data
-        const filteredKeys = keys.filter(k => !disabledTypes.has(k));
-        const stackedData = d3.stack().keys(filteredKeys)(stackedDataRaw);
-
-        const margin = { top: 20, right: 20, bottom: 30, left: 40 },
-            width = 600 - margin.left - margin.right,
-            height = 400 - margin.top - margin.bottom;
-
-        const svgBar = d3.select("#stackedBarChart")
-            .append("g")
-            .attr("transform", `translate(${margin.left},${margin.top})`);
-
-        const x = d3.scaleBand()
-            .domain(stackedDataRaw.map(d => d.year))
-            .range([0, width])
-            .padding(0.1);
-
-        const y = d3.scaleLinear()
-            .domain([0, d3.max(stackedDataRaw, d => {
-                return d3.sum(filteredKeys, k => +d[k]);
-            })])
-            .nice()
-            .range([height, 0]);
-
-        svgBar.selectAll("g")
-            .data(stackedData)
-            .enter().append("g")
-            .attr("fill", d => colorMap[d.key])
-            .selectAll("rect")
-            .data(d => d)
-            .enter().append("rect")
-            .attr("x", d => x(d.data.year))
-            .attr("y", d => y(d[1]))
-            .attr("height", d => y(d[0]) - y(d[1]))
-            .attr("width", x.bandwidth())
-            .on("mousemove", (event, d) => {
-                const key = d3.select(event.target.parentNode).datum().key;
-                tooltip
-                    .style("opacity", 1)
-                    .style("left", (event.pageX + 10) + "px")
-                    .style("top", (event.pageY - 28) + "px")
-                    .html(`<strong>${key}</strong><br/>Count: ${d.data[key]}`);
-            })
-            .on("mouseout", () => tooltip.style("opacity", 0));
-
-        svgBar.append("g")
-            .attr("transform", `translate(0,${height})`)
-            .call(d3.axisBottom(x));
-
-        svgBar.append("g").call(d3.axisLeft(y));
-    };
-
-    // Load data first, then render
     Promise.all([
-        d3.csv("./data/breakout_by_workout_type.csv"),
-        d3.csv("./data/activity_summary_by_year.csv")
-    ]).then(([pieCSV, barCSV]) => {
-        pieDataRaw = pieCSV.map(d => ({
-            label: d.workoutActivityType,
-            value: +d.count
-        }));
+        d3.csv("./data/heart_rate.csv", d => ({
+            creationDate: new Date(d.creationDate),
+            bpm: +d.value
+        })),
+        d3.csv("./data/resting_heart_rate.csv", d => ({
+            creationDate: new Date(d.creationDate),
+            bpm: +d.value
+        }))
+    ]).then(([heartData, restingData]) => {
+        const heart = heartData.filter(d => d.creationDate >= cutoffDate).filter((_, i) => i % 10 === 0);
+        const resting = restingData.filter(d => d.creationDate >= cutoffDate).filter((_, i) => i % 2 === 0);
+        const all = heart.concat(resting);
+        const xExtent = d3.extent(all, d => d.creationDate);
+        const yExtent = d3.extent(all, d => d.bpm);
 
-        stackedDataRaw = barCSV.map(d => {
-            d.year = d.year;
-            for (const key in d) {
-                if (key !== "year") d[key] = +d[key];
-            }
-            return d;
-        });
+        let xScale = d3.scaleTime().domain(xExtent).range([0, chartWidth]);
+        const yScale = d3.scaleLinear().domain([Math.floor(yExtent[0] - 5), Math.ceil(yExtent[1] + 5)]).range([chartHeight, 0]);
 
-        keys = barCSV.columns.slice(1);
+        const xAxis = g.append("g")
+            .attr("transform", `translate(0, ${chartHeight})`)
+            .call(d3.axisBottom(xScale).ticks(6).tickFormat(d3.timeFormat("%b %Y")));
 
-        // Create legend
-        const legend = d3.select("#legend");
-        keys.forEach(key => {
-            const shortLabel = key;
-            const item = legend.append("div")
-                .attr("class", "legend-item")
-                .attr("data-key", key);
+        const yAxis = g.append("g").call(d3.axisLeft(yScale).ticks(6));
 
-            item.append("div")
-                .attr("class", "legend-color")
-                .style("background-color", colorMap[shortLabel]);
+        g.append("text")
+            .attr("x", chartWidth / 2)
+            .attr("y", chartHeight + 35)
+            .attr("fill", "black")
+            .attr("text-anchor", "middle")
+            .text("time");
 
-            item.append("div").text(shortLabel);
+        g.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("x", -chartHeight / 2)
+            .attr("y", -45)
+            .attr("fill", "black")
+            .attr("text-anchor", "middle")
+            .text("beats per minute");
 
-            item.on("click", function() {
-                if (disabledTypes.has(shortLabel)) {
-                    disabledTypes.delete(shortLabel);
-                    d3.select(this).classed("disabled", false);
-                } else {
-                    disabledTypes.add(shortLabel);
-                    d3.select(this).classed("disabled", true);
-                }
-                updateCharts();
+        const plotArea = g.append("g").attr("clip-path", "url(#clip)");
+
+        const circles = plotArea.selectAll("circle")
+            .data(heart)
+            .enter()
+            .append("circle")
+            .attr("cx", d => xScale(d.creationDate))
+            .attr("cy", d => yScale(d.bpm))
+            .attr("r", 2)
+            .attr("fill", colorMap.HeartRate)
+            .on("mouseover", function (event, d) {
+                const bounds = this.getBoundingClientRect();
+                tooltip
+                    .style("opacity", 1)
+                    .style("left", `${bounds.left + bounds.width / 2}px`)
+                    .style("top", `${bounds.top - 30}px`)
+                    .html(`Heart Rate: ${d.bpm} bpm<br>${d.creationDate.toLocaleString()}`);
+            })
+            .on("mouseout", () => tooltip.style("opacity", 0));
+
+        const restingLine = d3.line()
+            .curve(d3.curveMonotoneX)
+            .defined(d => !isNaN(d.bpm))
+            .x(d => xScale(d.creationDate))
+            .y(d => yScale(d.bpm));
+
+        const linePath = plotArea.append("path")
+            .datum(resting)
+            .attr("fill", "none")
+            .attr("stroke", colorMap.RestingHeartRate)
+            .attr("stroke-width", 1.5)
+            .attr("d", restingLine);
+
+        const annotationGroup = g.append("g").attr("class", "resting-annotations");
+
+        resting.forEach(d => {
+            // Clear previous annotations if any
+            annotationGroup.selectAll("*").remove();
+
+            // Stagger logic: alternate vertical spacing
+            const chartRight = chartWidth;
+            const filtered = resting.filter(d => d.bpm > 70);
+            const annotationSpacing = [-70, -110, -150]; // spaced more
+
+            filtered.forEach((d, i) => {
+                const x = xScale(d.creationDate);
+                const y = yScale(d.bpm);
+
+                const dx = -120;  // always right
+                const dy = annotationSpacing[i % annotationSpacing.length];
+                const rectWidth = 230;
+                const rectHeight = 20;
+
+                // Line
+                annotationGroup.append("line")
+                    .attr("x1", x)
+                    .attr("y1", y)
+                    .attr("x2", x + dx)
+                    .attr("y2", y + dy + 10)
+                    .attr("stroke", "black")
+                    .attr("stroke-width", 1);
+
+                // Background
+                annotationGroup.append("rect")
+                    .attr("x", x + dx)
+                    .attr("y", y + dy)
+                    .attr("width", rectWidth)
+                    .attr("height", rectHeight)
+                    .attr("rx", 6)
+                    .attr("fill", "white")
+                    .attr("stroke", "#333");
+
+                // Text
+                annotationGroup.append("text")
+                    .attr("x", x + dx + 5)
+                    .attr("y", y + dy + 15)
+                    .attr("text-anchor", "start")
+                    .attr("font-size", 12)
+                    .attr("fill", "black")
+                    .text(`Possible anomalous resting heart rate: ${d.bpm}`)
             });
+
+
         });
 
-        updateCharts();
+        // Zoom toggle
+        let brushing = false;
+        const brush = d3.brushX()
+            .extent([[0, 0], [chartWidth, chartHeight]])
+            .on("start", function () {
+                d3.select(this).select(".overlay").attr("fill", "transparent");
+                d3.select(this).select(".selection").attr("fill", "rgba(100,100,100,0.2)");
+            })
+            .on("end", (event) => {
+                if (!event.selection) return;
+                const [x0, x1] = event.selection.map(xScale.invert);
+                xScale.domain([x0, x1]);
+                xAxis.transition().duration(750).call(d3.axisBottom(xScale).ticks(6).tickFormat(d3.timeFormat("%b %Y")));
+                circles.transition().duration(750).attr("cx", d => xScale(d.creationDate));
+                linePath.transition().duration(750).attr("d", restingLine);
+                annotationGroup.style("display", annotationsVisible ? "block" : "none");
+                g.select(".brush").remove();
+                brushing = false;
+                toggleText.text("Enable Zoom");
+                annotationsVisible = !annotationsVisible;
+                annotationGroup.style("display", annotationsVisible ? "block" : "none");
+                toggleAnnText.text(annotationsVisible ? "Hide Annotations" : "Show Annotations");
+            });
+
+        const controlY = margin.top;
+        const toggleGroup = svg.append("g").attr("transform", `translate(${width - 150},${controlY})`).style("cursor", "pointer");
+        toggleGroup.append("rect").attr("width", 120).attr("height", 24).attr("rx", 4).attr("fill", "#eee").attr("stroke", "#999");
+        const toggleText = toggleGroup.append("text").attr("x", 60).attr("y", 16).attr("text-anchor", "middle").attr("font-size", 12).attr("fill", "#333").text("Enable Zoom");
+        toggleGroup.on("click", () => {
+            if (!brushing) {
+                g.append("g").attr("class", "brush").call(brush);
+                brushing = true;
+                toggleText.text("Disable Zoom");
+            } else {
+                g.select(".brush").remove();
+                brushing = false;
+                toggleText.text("Enable Zoom");
+            }
+        });
+
+        const resetGroup = svg.append("g").attr("transform", `translate(${width - 150},${controlY + 35})`).style("cursor", "pointer");
+        resetGroup.append("rect").attr("width", 120).attr("height", 24).attr("rx", 4).attr("fill", "#eee").attr("stroke", "#999");
+        resetGroup.append("text").attr("x", 60).attr("y", 16).attr("text-anchor", "middle").attr("font-size", 12).attr("fill", "#333").text("Reset Zoom");
+        resetGroup.on("click", () => {
+            xScale.domain(xExtent);
+            xAxis.transition().duration(750).call(d3.axisBottom(xScale).ticks(6).tickFormat(d3.timeFormat("%b %Y")));
+            circles.transition().duration(750).attr("cx", d => xScale(d.creationDate));
+            linePath.transition().duration(750).attr("d", restingLine);
+            annotationGroup.style("display", annotationsVisible ? "block" : "none");
+        });
+
+        const toggleAnnGroup = svg.append("g").attr("transform", `translate(${width - 150},${controlY + 70})`).style("cursor", "pointer");
+        toggleAnnGroup.append("rect").attr("width", 120).attr("height", 24).attr("rx", 4).attr("fill", "#eee").attr("stroke", "#999");
+        const toggleAnnText = toggleAnnGroup.append("text").attr("x", 60).attr("y", 16).attr("text-anchor", "middle").attr("font-size", 12).attr("fill", "#333").text("Hide Annotations");
+        toggleAnnGroup.on("click", () => {
+            annotationsVisible = !annotationsVisible;
+            annotationGroup.style("display", annotationsVisible ? "block" : "none");
+            toggleAnnText.text(annotationsVisible ? "Hide Annotations" : "Show Annotations");
+        });
+
+        // Legend
+        const legendContainer = d3.select("#legend").html("").classed("legend-noninteractive", true).style("pointer-events", "none");
+        [
+            { label: "Heart Rate", color: colorMap.HeartRate },
+            { label: "Resting Heart Rate", color: colorMap.RestingHeartRate },
+        ].forEach(item => {
+            const legendItem = legendContainer.append("div").attr("class", "legend-item");
+            legendItem.append("div").attr("class", "legend-color").style("background-color", item.color);
+            legendItem.append("div").text(item.label);
+        });
+    }).catch(err => {
+        console.error("Error loading data:", err);
+        d3.select("#slideContainer").append("div").text("Failed to load heart rate data.");
+    }).finally(() => {
+        document.getElementById("loading").style.display = "none";
     });
 }
 
-function initSlide1() {
+function initSlide1Old() {
     const svg = d3.select("#heartRateLineChart");
     svg.selectAll("*").remove();
 
