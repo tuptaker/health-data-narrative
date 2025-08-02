@@ -185,8 +185,8 @@ function initSlide0() {
         barGroup.append("rect")
             .attr("x", 402)
             .attr("y", -5)
-            .attr("width", 115)
-            .attr("height", 50)
+            .attr("width", 126)
+            .attr("height", 100)
             .attr("rx", 8)
             .attr("ry", 8)
             .attr("fill", "#f9f9f9")
@@ -202,6 +202,24 @@ function initSlide0() {
             .attr("x", 408)
             .attr("y", 32)
             .text("type per year.")
+            .style("font-size", "12px");
+
+        barGroup.append("text")
+            .attr("x", 408)
+            .attr("y", 48)
+            .text("Note that walking,")
+            .style("font-size", "12px");
+
+        barGroup.append("text")
+            .attr("x", 408)
+            .attr("y", 64)
+            .text("running, and elliptical")
+            .style("font-size", "12px");
+
+        barGroup.append("text")
+            .attr("x", 408)
+            .attr("y", 80)
+            .text("are the most frequent.")
             .style("font-size", "12px");
 
         if (!pieAnnotationsVisible) toggleAnnotations(true);
