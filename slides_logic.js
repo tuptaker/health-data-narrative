@@ -104,24 +104,27 @@ function initSlide0() {
             .attr("height", 66)
             .attr("rx", 8)
             .attr("ry", 8)
-            .attr("fill", "#f9f9f9")
-            .attr("stroke", "black");
+            .attr("fill", "#f3ecad")
+            .attr("stroke", "#4a4a49");
 
         pieGroup.append("text")
             .attr("x", -194)
             .attr("y", -178)
+            .attr("fill", "#4a4a49")
             .text("Different kinds of workouts as")
             .style("font-size", "12px");
 
         pieGroup.append("text")
             .attr("x", -194)
             .attr("y", -162)
+            .attr("fill", "#4a4a49")
             .text("a percentage of all workout")
             .style("font-size", "12px");
 
         pieGroup.append("text")
             .attr("x", -194)
             .attr("y", -148)
+            .attr("fill", "#4a4a49")
             .text("sessions since 2017.")
             .style("font-size", "12px");
 
@@ -189,36 +192,41 @@ function initSlide0() {
             .attr("height", 100)
             .attr("rx", 8)
             .attr("ry", 8)
-            .attr("fill", "#f9f9f9")
-            .attr("stroke", "black");
+            .attr("fill", "#f3ecad")
+            .attr("stroke", "#4a4a49");
 
         barGroup.append("text")
             .attr("x", 408)
             .attr("y", 16)
+            .attr("fill", "#4a4a49")
             .text("Total workouts by")
             .style("font-size", "12px");
 
         barGroup.append("text")
             .attr("x", 408)
             .attr("y", 32)
+            .attr("fill", "#4a4a49")
             .text("type per year.")
             .style("font-size", "12px");
 
         barGroup.append("text")
             .attr("x", 408)
             .attr("y", 48)
+            .attr("fill", "#4a4a49")
             .text("Note that walking,")
             .style("font-size", "12px");
 
         barGroup.append("text")
             .attr("x", 408)
             .attr("y", 64)
+            .attr("fill", "#4a4a49")
             .text("running, and elliptical")
             .style("font-size", "12px");
 
         barGroup.append("text")
             .attr("x", 408)
             .attr("y", 80)
+            .attr("fill", "#4a4a49")
             .text("are the most frequent.")
             .style("font-size", "12px");
 
@@ -401,8 +409,8 @@ function initSlide1() {
                     .attr("width", rectWidth)
                     .attr("height", rectHeight)
                     .attr("rx", 6)
-                    .attr("fill", "white")
-                    .attr("stroke", "#333");
+                    .attr("fill", "#f3ecad")
+                    .attr("stroke", "#4a4a49");
 
                 // Text
                 annotationGroup.append("text")
@@ -410,7 +418,7 @@ function initSlide1() {
                     .attr("y", y + dy + 15)
                     .attr("text-anchor", "start")
                     .attr("font-size", 12)
-                    .attr("fill", "black")
+                    .attr("fill", "#4a4a49")
                     .text(`Possible anomalous resting heart rate: ${d.bpm}`)
             });
 
@@ -495,215 +503,6 @@ function initSlide1() {
     });
 }
 
-function initSlide1Old() {
-    const svg = d3.select("#heartRateLineChart");
-    svg.selectAll("*").remove();
-
-    const width = 1000;
-    const height = 400;
-    const margin = { top: 20, right: 30, bottom: 40, left: 60 };
-    const chartWidth = width - margin.left - margin.right;
-    const chartHeight = height - margin.top - margin.bottom;
-
-    svg.attr("width", width).attr("height", height);
-
-    const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
-    const tooltip = d3.select(".tooltip");
-
-    const cutoffDate = new Date("2021-09-07");
-    document.getElementById("loading").style.display = "block";
-
-    Promise.all([
-        d3.csv("./data/heart_rate.csv", d => ({
-            creationDate: new Date(d.creationDate),
-            bpm: +d.value
-        })),
-        d3.csv("./data/resting_heart_rate.csv", d => ({
-            creationDate: new Date(d.creationDate),
-            bpm: +d.value
-        }))
-    ]).then(([heartData, restingData]) => {
-        const heart = heartData.filter(d => d.creationDate >= cutoffDate).filter((_, i) => i % 10 === 0);
-        const resting = restingData.filter(d => d.creationDate >= cutoffDate).filter((_, i) => i % 2 === 0);
-
-        const all = heart.concat(resting);
-        const xExtent = d3.extent(all, d => d.creationDate);
-        const yExtent = d3.extent(all, d => d.bpm);
-
-        let xScale = d3.scaleTime().domain(xExtent).range([0, chartWidth]);
-        const yScale = d3.scaleLinear().domain([Math.floor(yExtent[0] - 5), Math.ceil(yExtent[1] + 5)]).range([chartHeight, 0]);
-
-        const xAxis = g.append("g")
-            .attr("transform", `translate(0, ${chartHeight})`)
-            .call(d3.axisBottom(xScale).ticks(6).tickFormat(d3.timeFormat("%b %Y")));
-
-        const yAxis = g.append("g").call(d3.axisLeft(yScale).ticks(6));
-
-        g.append("text")
-            .attr("x", chartWidth / 2)
-            .attr("y", chartHeight + 35)
-            .attr("fill", "black")
-            .attr("text-anchor", "middle")
-            .text("time");
-
-        g.append("text")
-            .attr("transform", "rotate(-90)")
-            .attr("x", -chartHeight / 2)
-            .attr("y", -45)
-            .attr("fill", "black")
-            .attr("text-anchor", "middle")
-            .text("beats per minute");
-
-        const plotArea = g.append("g")
-            .attr("clip-path", "url(#clip)");
-
-        const circles = plotArea.selectAll("circle")
-            .data(heart)
-            .enter()
-            .append("circle")
-            .attr("cx", d => xScale(d.creationDate))
-            .attr("cy", d => yScale(d.bpm))
-            .attr("r", 2)
-            .attr("fill", colorMap.HeartRate)
-            .on("mouseover", function (event, d) {
-                const bounds = this.getBoundingClientRect();
-                tooltip
-                    .style("opacity", 1)
-                    .style("left", `${bounds.left + bounds.width / 2}px`)
-                    .style("top", `${bounds.top - 30}px`)
-                    .html(`Heart Rate: ${d.bpm} bpm<br>${d.creationDate.toLocaleString()}`);
-            })
-            .on("mouseout", () => tooltip.style("opacity", 0));
-
-        const restingLine = d3.line()
-            .curve(d3.curveMonotoneX)
-            .defined(d => !isNaN(d.bpm))
-            .x(d => xScale(d.creationDate))
-            .y(d => yScale(d.bpm));
-
-        const linePath = plotArea.append("path")
-            .datum(resting)
-            .attr("fill", "none")
-            .attr("stroke", colorMap.RestingHeartRate)
-            .attr("stroke-width", 1.5)
-            .attr("d", restingLine);
-
-        // Brush setup
-        let brushing = false;
-        const brush = d3.brushX()
-            .extent([[0, 0], [chartWidth, chartHeight]])
-            .on("start", function () {
-                d3.select(this).select(".overlay").attr("fill", "transparent");
-                d3.select(this).select(".selection").attr("fill", "rgba(100,100,100,0.2)");
-            })
-            .on("end", (event) => {
-                if (!event.selection) return;
-
-                const [x0, x1] = event.selection.map(xScale.invert);
-                xScale.domain([x0, x1]);
-
-                xAxis.transition().duration(750).call(d3.axisBottom(xScale).ticks(6).tickFormat(d3.timeFormat("%b %Y")));
-                circles.transition().duration(750).attr("cx", d => xScale(d.creationDate));
-                linePath.transition().duration(750).attr("d", restingLine);
-
-                g.select(".brush").remove();
-                brushing = false;
-                toggleText.text("Enable Zoom");
-            });
-
-        // Toggle zoom button
-        const toggleGroup = svg.append("g")
-            .attr("transform", `translate(${width - 150},${margin.top})`)
-            .style("cursor", "pointer");
-
-        toggleGroup.append("rect")
-            .attr("width", 120)
-            .attr("height", 24)
-            .attr("rx", 4)
-            .attr("fill", "#eee")
-            .attr("stroke", "#999");
-
-        const toggleText = toggleGroup.append("text")
-            .attr("x", 60)
-            .attr("y", 16)
-            .attr("text-anchor", "middle")
-            .attr("font-size", 12)
-            .attr("fill", "#333")
-            .text("Enable Zoom");
-
-        toggleGroup.on("click", () => {
-            if (!brushing) {
-                const brushG = g.append("g")
-                    .attr("class", "brush")
-                    .call(brush);
-                brushing = true;
-                toggleText.text("Disable Zoom");
-            } else {
-                g.select(".brush").remove();
-                brushing = false;
-                toggleText.text("Enable Zoom");
-            }
-        });
-
-        // Reset zoom button
-        const resetGroup = svg.append("g")
-            .attr("transform", `translate(${width - 150},${margin.top + 35})`)
-            .style("cursor", "pointer");
-
-        resetGroup.append("rect")
-            .attr("width", 120)
-            .attr("height", 24)
-            .attr("rx", 4)
-            .attr("fill", "#eee")
-            .attr("stroke", "#999");
-
-        resetGroup.append("text")
-            .attr("x", 60)
-            .attr("y", 16)
-            .attr("text-anchor", "middle")
-            .attr("font-size", 12)
-            .attr("fill", "#333")
-            .text("Reset Zoom");
-
-        resetGroup.on("click", () => {
-            xScale.domain(xExtent);
-            xAxis.transition().duration(750).call(d3.axisBottom(xScale).ticks(6).tickFormat(d3.timeFormat("%b %Y")));
-            circles.transition().duration(750).attr("cx", d => xScale(d.creationDate));
-            linePath.transition().duration(750).attr("d", restingLine);
-        });
-
-        // Legend (non-interactive)
-        const legendContainer = d3.select("#legend");
-        legendContainer.html(""); // clear any existing content
-
-        const legendItems = [
-            { label: "Heart Rate", color: colorMap.HeartRate },
-            { label: "Resting Heart Rate", color: colorMap.RestingHeartRate },
-        ];
-
-        legendItems.forEach(item => {
-            const legendItem = legendContainer.append("div")
-                .attr("class", "legend-item");
-
-            legendItem.append("div")
-                .attr("class", "legend-color")
-                .style("background-color", item.color);
-
-            legendItem.append("div").text(item.label);
-        });
-
-        legendContainer
-            .classed("legend-noninteractive", true)
-            .style("pointer-events", "none");
-
-    }).catch(err => {
-        console.error("Error loading data:", err);
-        d3.select("#slideContainer").append("div").text("Failed to load heart rate data.");
-    }).finally(() => {
-        document.getElementById("loading").style.display = "none";
-    });
-}
-
 function initSlide2() {
     console.log('loading slide 2');
     const svg = d3.select("#walkRunDetails");
@@ -732,35 +531,21 @@ function initSlide2() {
             distance: +d.distance || 0
         }))
     ]).then(([walkingData, runningData]) => {
-        const allDates = walkingData.map(d => d.date).concat(runningData.map(d => d.date));
-        const allDistances = walkingData.map(d => d.distance).concat(runningData.map(d => d.distance));
-        console.log("Sample parsed dates:", walkingData.slice(0, 5).map(d => d.date));
+        const allData = walkingData.map(d => ({ ...d, type: "Walking", color: colorMap.Walking }))
+            .concat(runningData.map(d => ({ ...d, type: "Running", color: colorMap.Running })));
 
-        const xScale = d3.scaleTime()
-            .domain(d3.extent(allDates))
-            .range([0, chartWidth]);
+        const xExtent = d3.extent(allData, d => d.date);
+        const yExtent = [0, d3.max(allData, d => d.distance)];
 
-        const yScale = d3.scaleLinear()
-            .domain([0, d3.max(allDistances)])
-            .range([chartHeight, 0]);
+        let xScale = d3.scaleTime().domain(xExtent).range([0, chartWidth]);
+        let yScale = d3.scaleLinear().domain(yExtent).range([chartHeight, 0]);
 
-        const xAxis = d3.axisBottom(xScale).ticks(6).tickFormat(d => {
-            const formatMonthDay = d3.timeFormat("%b %d");
-            const formatYear = d3.timeFormat("%Y");
-            return d.getMonth() === 0 && d.getDate() === 1
-                ? formatYear(d) : formatMonthDay(d);
-        })
-        ;
-        const yAxis = d3.axisLeft(yScale).ticks(6);
-
-        g.append("g")
+        const xAxis = g.append("g")
             .attr("transform", `translate(0,${chartHeight})`)
-            .call(xAxis);
+            .call(d3.axisBottom(xScale).ticks(6));
 
-        g.append("g")
-            .call(yAxis);
+        const yAxis = g.append("g").call(d3.axisLeft(yScale).ticks(6));
 
-        // Axis labels
         g.append("text")
             .attr("x", chartWidth / 2)
             .attr("y", chartHeight + 35)
@@ -776,56 +561,161 @@ function initSlide2() {
             .attr("text-anchor", "middle")
             .text("distance (mi)");
 
-        const area = d3.area()
-            .x(d => xScale(d.date))
-            .y0(chartHeight)
-            .y1(d => yScale(d.distance))
-            .curve(d3.curveMonotoneX);
+        const pointsGroup = g.append("g");
+        const updatePoints = () => {
+            const circles = pointsGroup.selectAll("circle").data(allData);
+            circles.enter()
+                .append("circle")
+                .merge(circles)
+                .attr("cx", d => xScale(d.date))
+                .attr("cy", d => yScale(d.distance))
+                .attr("r", 3)
+                .attr("fill", d => d.color)
+                .on("mouseover", function (event, d) {
+                    const bounds = this.getBoundingClientRect();
+                    tooltip
+                        .style("opacity", 1)
+                        .style("left", `${bounds.left + bounds.width / 2}px`)
+                        .style("top", `${bounds.top - 30}px`)
+                        .html(`${d.type} Distance: ${d.distance.toFixed(2)} mi<br>${d3.timeFormat("%B %d, %Y")(d.date)}`);
+                })
+                .on("mouseout", () => tooltip.style("opacity", 0));
+            circles.exit().remove();
+        };
 
-        g.append("path")
-            .datum(runningData)
-            .attr("fill", colorMap.Running)
-            .attr("d", area)
-            .attr("opacity", 0.6);
+        updatePoints();
 
-        g.append("path")
-            .datum(walkingData)
-            .attr("fill", "##1f77b4")
-            .attr("d", area)
-            .attr("opacity", 0.6);
+        const annotationGroup = g.append("g").attr("class", "annotations");
+        function renderAnnotations() {
+            annotationGroup.selectAll("*").remove();
+            const annotated = runningData.filter(d => d.distance > 11);
 
-        // Tooltip points
-        const allData = walkingData.map(d => ({ ...d, type: "Walking", color: colorMap.Walking }))
-            .concat(runningData.map(d => ({ ...d, type: "Running", color: colorMap.Running })));
+            annotated.forEach((d) => {
+                const x = xScale(d.date);
+                const y = yScale(d.distance);
+                annotationGroup.append("circle")
+                    .attr("cx", x)
+                    .attr("cy", y)
+                    .attr("r", 6)
+                    .attr("fill", "none")
+                    .attr("stroke", "black")
+                    .attr("stroke-width", 1.2);
+            });
 
-        g.selectAll(".dot")
-            .data(allData)
-            .enter()
-            .append("circle")
-            .attr("cx", d => xScale(d.date))
-            .attr("cy", d => yScale(d.distance))
-            .attr("r", 3)
-            .attr("fill", d => d.color)
-            .on("mouseover", function (event, d) {
-                const bounds = this.getBoundingClientRect();
-                tooltip
-                    .style("opacity", 1)
-                    .style("left", `${bounds.left + bounds.width / 2}px`)
-                    .style("top", `${bounds.top - 30}px`)
-                    .html(`${d.type} Distance: ${d.distance.toFixed(2)} mi<br>${d3.timeFormat("%B %d, %Y")(d.date)}`);
-            })
-            .on("mouseout", () => tooltip.style("opacity", 0));
+            const boxX = chartWidth - 450;
+            const boxY = 50;
 
-        // Legend (non-interactive)
+            const textBox = annotationGroup.append("g");
+            textBox.append("rect")
+                .attr("x", 50)
+                .attr("y", 15)
+                .attr("rx", 6)
+                .attr("ry", 6)
+                .attr("width", 365)
+                .attr("height", 32)
+                .attr("fill", "#f3ecad")
+                .attr("stroke", "#4a4a49");
+
+            textBox.append("text")
+                .attr("x", 76)
+                .attr("y", 35)
+                .attr("fill", "#4a4a49")
+                .style("font-size", "12px")
+                .text("Runs over 11 miles may be counting errors in data processing.");
+
+            textBox.append("circle")
+                .attr("cx", 65)
+                .attr("cy", 30)
+                .attr("r", 6)
+                .attr("fill", "white")
+                .attr("stroke", "black")
+                .attr("stroke-width", 1.5)
+
+            textBox.append("circle")
+                .attr("cx", 65)
+                .attr("cy", 30)
+                .attr("r", 3)
+                .attr("fill", colorMap.Running);
+        }
+
+        let annotationsVisible = true;
+        renderAnnotations();
+
+        let brushing = false;
+        const brush = d3.brushX()
+            .extent([[0, 0], [chartWidth, chartHeight]])
+            .on("end", (event) => {
+                if (!event.selection) return;
+                const [x0, x1] = event.selection.map(xScale.invert);
+                xScale.domain([x0, x1]);
+                xAxis.transition().duration(500).call(d3.axisBottom(xScale).ticks(6));
+                updatePoints();
+                g.select(".brush").remove();
+                brushing = false;
+                zoomText.text("Enable Zoom");
+                annotationsVisible = false;
+                annotationGroup.style("display", "none");
+                annotationText.text("Show Annotations");
+            });
+
+        const controls = svg.append("g").attr("transform", `translate(${width - 500},${margin.top})`);
+
+        function addControlButton(xOffset, label, callback) {
+            const btn = controls.append("g")
+                .attr("transform", `translate(${xOffset}, 0)`)
+                .style("cursor", "pointer")
+                .on("click", callback);
+
+            btn.append("rect")
+                .attr("width", 130)
+                .attr("height", 24)
+                .attr("rx", 4)
+                .attr("fill", "#eee")
+                .attr("stroke", "#999");
+
+            return btn.append("text")
+                .attr("x", 65)
+                .attr("y", 16)
+                .attr("text-anchor", "middle")
+                .attr("font-size", 12)
+                .attr("fill", "#333")
+                .text(label);
+        }
+
+        const zoomText = addControlButton(0, "Enable Zoom", () => {
+            if (!brushing) {
+                g.append("g").attr("class", "brush").call(brush);
+                brushing = true;
+                zoomText.text("Disable Zoom");
+            } else {
+                g.select(".brush").remove();
+                brushing = false;
+                zoomText.text("Enable Zoom");
+            }
+        });
+
+        addControlButton(140, "Reset Zoom", () => {
+            xScale.domain(xExtent);
+            xAxis.transition().duration(750).call(d3.axisBottom(xScale).ticks(6));
+            updatePoints();
+            annotationsVisible = true;
+            annotationGroup.style("display", "inline");
+            annotationText.text("Hide Annotations");
+        });
+
+        const annotationText = addControlButton(280, "Hide Annotations", () => {
+            annotationsVisible = !annotationsVisible;
+            annotationGroup.style("display", annotationsVisible ? "inline" : "none");
+            annotationText.text(annotationsVisible ? "Hide Annotations" : "Show Annotations");
+        });
+
         const legendContainer = d3.select("#legend");
-        legendContainer.html(""); // clear any existing content
+        legendContainer.html("");
 
-        const legendItems = [
+        [
             { label: "Running", color: colorMap.Running },
             { label: "Walking", color: colorMap.Walking },
-        ];
-
-        legendItems.forEach(item => {
+        ].forEach(item => {
             const legendItem = legendContainer.append("div")
                 .attr("class", "legend-item");
 
